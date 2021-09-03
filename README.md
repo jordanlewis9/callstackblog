@@ -200,4 +200,4 @@ disarmVoldemort();
 ```
 <br/><br/>
 
-Thanks for taking the time to read this, and I hope you enjoyed!
+Click [this link](https://github.com/jordanlewis9/callstackblog) if you'd like to read the starter code. Thanks for taking the time to read this, and I hope you enjoyed!
