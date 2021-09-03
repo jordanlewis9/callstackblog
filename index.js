@@ -10,7 +10,6 @@ const killHarry = (disarmed) => {
     }
 }
 
-// disarmVoldemort();
 let isDisarmed = false;
 
 const disarmVoldemort = () => {

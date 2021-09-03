@@ -13,15 +13,15 @@ const showMeSomeData = (content, id) => {
 ```
 
 <br/><br/>
-In case you're unfamiliar with [axios](https://www.npmjs.com/package/axios), it's a promise based HTTP client for the browser and Node. In plain english, you can make calls to APIs with it. 
+In case you're unfamiliar with [axios](https://www.npmjs.com/package/axios), it's a promise based HTTP client for the browser and Node. In plain english, you can make calls to APIs with it.
 <br/><br/>
 In most instances, code similar to what is above will throw an error. I personally paused a little bit, as I'm not used to seeing an API call with axios not using async/await syntax. With async/await, Javascript will pause execution of the current script until the promise is resolved. Not only that, but the arrow function was defined AFTER the call with axios. With arrow functions being similar to function expressions, showMeSomeData should not have been hoisted. So, getting back to the question, how did the code work?
 <br/><br/>
-Javascript runs the code from the top of the file down. axios.get() is called. If we remember from the documentation, axios is promise based. That means that when axios.get() is called, it returns a promise. Because axios.get() is returning a promise, Javascript goes onto the next expression in the call stack. That next expression is declaring the arrow function showMeSomeData. This function now has a place in Javascript memory; it's been initialized. 
+Javascript runs the code from the top of the file down. axios.get() is called. If we remember from the documentation, axios is promise based. That means that when axios.get() is called, it returns a promise. Because axios.get() is returning a promise, Javascript goes onto the next expression in the call stack. That next expression is declaring the arrow function showMeSomeData. This function now has a place in Javascript memory; it's been initialized.
 <br/><br/>
 Once Javascript is finished with the showMeSomeData definition, it has reached the end of it's current call stack. It's now going to re-traverse the [event loop](https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop) to see if any operations it set to "pending" have been completed, such as promises, setTimeouts, setIntervals, etc. At this point, the axios.get() promise has resolved. Axios can now pass it's result to .then(), allowing .then() to call it's callback function. Because Javascript previously was able to define showMeSomeData, .then() can run the function _despite it not being hoisted_.
 <br/><br/>
-We can simulate this behavior with a few simple functions. Create a file simply named **index.js**. In index.js, let's make both a setTimeout function and a function that logs something to the console. 
+We can simulate this behavior with a few simple functions. Create a file simply named **index.js**. In index.js, let's make both a setTimeout function and a function that logs something to the console.
 <br/><br/>
 
 ```
@@ -33,16 +33,16 @@ const killHarry = () => {
     console.log("Avada Kedavra");
 }
 ```
-<br/><br/>
 
+<br/><br/>
 Here, setTimeout is going to get invoked immediately. Because it has to wait 30 milliseconds to call killHarry, Javascript puts it away for now and continues executing expressions in it's call stack. killHarry is defined, and now Javascript has gotten to the end of the file. It realizes that, upon going through the event loop again, that the 30 milliseconds has passed, and it can now call killHarry. In your terminal, run node index.js. I'm sorry Harry.
 <br/><br/>
 
 ```
 Avada Kedavra
 ```
-<br/><br/>
 
+<br/><br/>
 We already walked through a similar example with the axios.get() call. But perhaps to truly see the call stack and event loop in action, let's see if there is any way we can save Harry. After all (SPOILER ALERT!), he did die once in the books to Voldemort. Let's make our index.js look like this now:
 <br/><br/>
 
@@ -61,8 +61,8 @@ const disarmVoldemort = () => {
 
 disarmVoldemort();
 ```
-<br/><br/>
 
+<br/><br/>
 Now if we run node index.js, we see what may be a surprise to some:
 <br/><br/>
 
@@ -70,8 +70,8 @@ Now if we run node index.js, we see what may be a surprise to some:
 Expelliarmus
 Avada Kedavra
 ```
-<br/><br/>
 
+<br/><br/>
 Even though disarmVoldemort is the last function called on the page, it's the first to log to the console. This is the call stack and event loop in action. setTimeout is caled first, setting a timer of 30 milliseconds. We already know that killHarry is then defined in Javascript's memory. Next, disarmVoldemort is defined, followed by disarmVoldemort being called. Once disarmVoldemort is executed, Javascript circles back on it's event loop and, seeing that 30 milliseconds have passed, calls the killHarry function inside of setTimeout.
 <br/><br/>
 Let's say that our code instead is the same as listed below. What do you think the result would be?
@@ -92,9 +92,9 @@ const disarmVoldemort = () => {
     console.log("Expelliarmus");
 }
 ```
-<br/><br/>
 
-If you run node index.js, you'll get an error. Why, what's the difference? 
+<br/><br/>
+If you run node index.js, you'll get an error. Why, what's the difference?
 <br/><br/>
 The difference is that our call to disarmVoldemort happens before disarmVoldemort gets defined in the call stack. There isn't a promise attached to this call, and it's not being delayed by a setTimeout or setInterval. It's just being called.
 <br/><br/>
@@ -138,8 +138,8 @@ disarmVoldemort();
 disarmVoldemort();
 disarmVoldemort();
 ```
-<br/><br/>
 
+<br/><br/>
 And running node index.js will give us:
 <br/><br/>
 
@@ -167,11 +167,38 @@ Expelliarmus
 Expelliarmus
 Avada Kedavra
 ```
-<br/><br/>
 
+<br/><br/>
 Even though killHarry is only delayed by 1 millisecond, and disarmVoldemort is called 20-25 times, killHarry is still called last because of the event loop. It gets taken out of the call stack, placed inside of a timer, and doesn't get called until Javascript empties it's current call stack and comes back to it in the event loop.
 <br/><br/>
-Before we end, let's truly have a little bit of fun with this, and actually save Harry. 
+While we have instantly called the setTimeout function, what would happen if we placed setTimeout in it's own function scope? Would Javascript get caught up in that scope and be unable to call killHarry, or would we see the same outcome? Let's take a look...
+<br/><br/>
+
+```
+const tryToKillHarry = () => {
+    setTimeout(function() {
+        killHarry();
+    }, 1);
+}
+
+tryToKillHarry();
+
+
+const killHarry = () => {
+    console.log("Avada Kedavra");
+}
+
+const disarmVoldemort = () => {
+    console.log("Expelliarmus");
+}
+
+disarmVoldemort();
+```
+
+<br/><br/>
+If we run node index.js, we get the same result as we have been getting: Expelliarmus gets logged first, followed by Avada Kedavra. The reason behind this is because Javascript executes setTimeout by placing it in it's internal timer, and carries on with any other expressions in tryToKillHarry. Since there is nothing left, it's current execution of tryToKillHarry is finished in this iteration of the event loop. The rest just runs as it has earlier in this post.
+<br/><br/>
+Before we end, let's truly have a little bit of fun with this, and actually save Harry.
 <br/><br/>
 
 ```
@@ -198,6 +225,6 @@ disarmVoldemort();
 
 // prints "Goodbye, Voldemort"
 ```
-<br/><br/>
 
-Click [this link](https://github.com/jordanlewis9/callstackblog) if you'd like to read the starter code. Thanks for taking the time to read this, and I hope you enjoyed!
+<br/><br/>
+Click [this link](https://github.com/jordanlewis9/callstackblog) if you'd like to read the starter code. I will post a smaller part 2 to this post, using API calls with axios to demonstrate the call stack/event loop with promises, which function very similarly to setTimeout. Thanks for taking the time to read this, and I hope you enjoyed!
